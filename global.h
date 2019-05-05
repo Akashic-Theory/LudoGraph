@@ -2,6 +2,8 @@
 
 #include <SFML/Graphics.hpp>
 
+#include "inspector.h"
+
 class Global{
 	private:
 		static Global* _instance;
@@ -12,6 +14,7 @@ class Global{
 		
 	public:
 		sf::Font _font;
+		Inspector _insp;
 		
 		static Global& get();
 };

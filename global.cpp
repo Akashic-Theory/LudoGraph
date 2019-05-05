@@ -1,6 +1,11 @@
 #include "global.h"
 
-Global::Global() : _font(sf::Font()) {}
+Global::Global() : 
+	_font(sf::Font()),
+	_insp(Inspector())
+{
+	
+}
 
 Global& Global::get(){
 	static Global instance;
