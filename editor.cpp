@@ -10,6 +10,7 @@
 #include "segment.h"
 #include "inspector.h"
 #include "global.h"
+#include "editorwindows.h"
 
 
 
@@ -44,8 +45,10 @@ int main(int argc, char* argv[])
 	sf::Clock clock = sf::Clock();
 	
 	sf::RenderWindow window(resolution, "SFML works!");
+	SegWindow segWindow = SegWindow(window);
 	//window.setFramerateLimit(5);
 	sf::View mainView = sf::View();
+	sf::View tabView = sf::View();
 	
 	Inspector& insp = Global::get()._insp;
 	Segment s = Segment();
@@ -56,11 +59,31 @@ int main(int argc, char* argv[])
 	bool drag = false;
 	bool editing = false;
 	
+	int tab = 0;
+	
+	sf::Text tabText = sf::Text();
+	tabText.setFont(Global::get()._font);
+	
+	
+	std::vector<std::string> tabStrings = std::vector<std::string>();
+	tabStrings.push_back("N/A");
+	tabStrings.push_back("N/A");
+	tabStrings.push_back("Board");
+	tabStrings.push_back("Segment");
+	
+	const int tabThickness = 5;
+	sf::RectangleShape tabRect = sf::RectangleShape(sf::Vector2f(720 / 4 - (2* tabThickness), 60 - (2*tabThickness)));
+	tabRect.setFillColor(sf::Color(27, 96, 124));
+	tabRect.setOutlineColor(sf::Color(99, 157, 181));
+	tabRect.setOutlineThickness(5);
+	
 	TargetGroupHierarchy hier = TargetGroupHierarchy();
 	//vector<SegTarget*> targets = vector<SegTarget*>();
 	
 	mainView.reset(sf::FloatRect(0, 0, 720, 720));
 	mainView.setViewport(sf::FloatRect(0.2f, 0.05f, 0.6f, 0.95f));
+	tabView.reset(sf::FloatRect(0, 0, 720, 60));
+	tabView.setViewport(sf::FloatRect(0.2f, 0.0f, 0.6f, 0.05f));
 	
 	window.setView(mainView);
 	
@@ -75,6 +98,13 @@ int main(int argc, char* argv[])
 				}break;
 				case sf::Event::MouseButtonPressed:{
 					// Mouse pressed
+					segWindow.processEvent(event);
+					if(event.mouseButton.button == sf::Mouse::Button::Left){
+						if(sf::FloatRect(sf::Vector2f(), tabView.getSize()).contains(window.mapPixelToCoords(mPos, tabView))){
+							cout << tabStrings[(int)window.mapPixelToCoords(mPos, tabView).x * 4 / 720] << endl;
+						}
+					}
+					/*
 					if(event.mouseButton.button == sf::Mouse::Button::Left){
 						//Reset selected objet
 						mov = nullptr;
@@ -83,7 +113,9 @@ int main(int argc, char* argv[])
 							s.updateData();
 							hier.preDraw();
 						}
-						if(insp.select(window.mapPixelToCoords(mPos, insp.getView()), [&](){
+						if(sf::FloatRect(sf::Vector2f(), tabView.getSize()).contains(window.mapPixelToCoords(mPos, tabView))){
+							cout << tabStrings[(int)window.mapPixelToCoords(mPos, tabView).x * 4 / 720] << endl;
+						}else if(insp.select(window.mapPixelToCoords(mPos, insp.getView()), [&](){
 								s.updateData();
 								hier.preDraw();
 								cout << "LAMBDA" << endl;
@@ -135,9 +167,11 @@ int main(int argc, char* argv[])
 						mPos = sf::Mouse::getPosition(window);
 						hier.regroup(window.mapPixelToCoords(mPos, hier.getView()), multi);
 					}
-					
+					*/
 				}break;
 				case sf::Event::MouseButtonReleased:{
+					segWindow.processEvent(event);
+					/*
 					if(event.mouseButton.button == sf::Mouse::Button::Middle){
 						drag = false;
 					}
@@ -145,8 +179,11 @@ int main(int argc, char* argv[])
 						mov->snap();
 					}
 					mov = nullptr;
+					*/
 				}break;
 				case sf::Event::MouseMoved:{
+					segWindow.processEvent(event);
+					/*
 					sf::Vector2f last = window.mapPixelToCoords(mPos, mainView);
 					mPos = sf::Mouse::getPosition(window);
 					sf::Vector2f curPos = window.mapPixelToCoords(mPos, mainView);
@@ -157,8 +194,11 @@ int main(int argc, char* argv[])
 						mov->move(diff.x, diff.y);
 						insp.updateView();
 					}
+					*/
 				}break;
 				case sf::Event::MouseWheelScrolled:{
+					segWindow.processEvent(event);
+					/*
 					sf::Vector2f point = window.mapPixelToCoords(mPos, hier.getView());
 					point.y = 0;
 					if(sf::FloatRect(0, 0, 250, 5).contains(point)){
@@ -166,37 +206,22 @@ int main(int argc, char* argv[])
 					}else{
 						mainView.zoom((float)event.mouseWheelScroll.delta / 5 + 1);
 					}
+					*/
 				}break;
 				case sf::Event::KeyPressed:{
-					// Unconditional
-					//switch(event.key.code){
-					//	case sf::Keyboard::Key::R:{
-					//		s.updateData();
-					//	}break;
-					//	default:{}
-					//}
-					// Only if  not currently in editor
+					segWindow.processEvent(event);
+					/*
 					if(!editing){
 						switch(event.key.code){
 							case sf::Keyboard::Key::D:{
 								for(auto target : multi){
 									hier.remove(target);
+									s.remove(target);
 								}
 								multi.clear();
 								insp.clear();
 								sel = nullptr;
 								mov = nullptr;
-								/*for(auto it = targets.begin(); it != targets.end();){
-									if(*it == sel){
-										delete *it;
-										targets.erase(it);
-										it = targets.end();
-										sel = nullptr;
-										mov = nullptr;
-									}else{
-										++it;
-									}
-								}*/
 								///std::cout << targets.size() << std::endl;
 							}break;
 							case sf::Keyboard::Key::A:{
@@ -204,7 +229,7 @@ int main(int argc, char* argv[])
 								//	hier.newTarget(window.mapPixelToCoords(mPos, mainView), s.getSnap());
 								//}
 								if(sel){
-									SegTarget& seg = hier.newTarget(window.mapPixelToCoords(mPos, mainView), sel->getData().access<sf::Vector2f>("Snap Amt"));
+									SegTarget& seg = hier.newTarget(&(sel->newTarget(window.mapPixelToCoords(mPos, mainView))));
 									if(sel != &s){
 										std::string build = sel->getData().access<std::string>("Name");
 										std::string index;
@@ -255,11 +280,15 @@ int main(int argc, char* argv[])
 							default:{}
 						}
 					}
+					*/
 				}break;
 				case sf::Event::TextEntered:{
+					segWindow.processEvent(event);
+					/*
 					if(editing && event.text.unicode > 31 && event.text.unicode < 127){
 						insp.write(sf::String(event.text.unicode));
 					}
+					*/
 				}break;
 				default:{
 					
@@ -271,6 +300,22 @@ int main(int argc, char* argv[])
 		//Draw Cycle
 		window.clear();
 		
+		//Tab Draw Cycle
+		window.setView(tabView);
+		for(int i = 0; i < 4; i++){
+			tabRect.setPosition(sf::Vector2f(i * 180 + tabThickness, tabThickness));
+			window.draw(tabRect);
+			tabText.setString(tabStrings[i]);
+			sf::FloatRect rec = tabText.getLocalBounds();
+			rec.left = i * 180 + (180 - rec.width) / 2.0;
+			tabText.setPosition(rec.left, rec.top);
+			window.draw(tabText);
+		}
+		//End Tab Draw
+		segWindow.preDraw();
+		window.draw(segWindow);
+		
+		/*
 		window.setView(mainView);
 		window.draw(s);
 		{
@@ -279,14 +324,14 @@ int main(int argc, char* argv[])
 				t->updateSource(pos);
 			}
 		}
-		
+		*/
 		/*for(auto t : targets){
 			t->updateSource(s.getCenter());
 			window.draw(*t);
 		}*/
 		
 		window.draw(insp);
-		window.draw(hier);
+		//window.draw(hier);
 		
 		window.display();
 	}

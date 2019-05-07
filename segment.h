@@ -8,6 +8,8 @@
 #include "construct.h"
 #include "inspector.h"
 
+class SegTarget;
+
 class SegmentController: public Movable{
 	protected:
 		sf::Sprite _sprite;
@@ -30,6 +32,7 @@ class SegmentController: public Movable{
 		virtual void setDefCol(const sf::Color& col);
 		virtual void setTint(const sf::Color& col);
 		virtual void mark(const bool t);
+		virtual SegTarget& newTarget(const sf::Vector2f& origin = sf::Vector2f());
 		virtual sf::Vector2f getCenter() const;
 		virtual InspectorData& getData();
 		virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const = 0;
@@ -46,12 +49,16 @@ class SegTarget: public sf::Drawable, public SegmentController{
 };
 
 class Segment : public sf::Drawable, public SegmentController{
+	friend class TargetGroupHierarchy;
 	private:
 		static sf::Texture _defSeg;
 		int _grid;
+		std::set<SegTarget*> _targets;
 	public:
 		Segment(const sf::Vector2f& origin = sf::Vector2f());
+		~Segment();
 		void updateData();
+		void remove(SegTarget* target);
 		virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
 };
 
@@ -92,8 +99,8 @@ class TargetGroupHierarchy : public sf::Drawable{
 		bool select(const sf::Vector2f& pos, const bool additive = false, const std::function<void(InspectorData*)>& processData = [](InspectorData*){});
 		bool select(const float x, const float y, const bool additive = false, const std::function<void(InspectorData*)>& processData = [](InspectorData*){});
 		void regroup(const sf::Vector2f& pos, std::set<SegTarget*>& targets);
-		SegTarget& newTarget(const sf::Vector2f& origin = sf::Vector2f(), const sf::Vector2f& snapping = sf::Vector2f());
 		void newGroup(const std::string& tag = "New Group");
+		SegTarget& newTarget(SegTarget* target);
 		void deleteSelectedGroups();
 		void remove(SegTarget* target);
 		const std::set<SegTarget*>& getActive();

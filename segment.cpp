@@ -92,6 +92,11 @@ void SegmentController::mark(const bool t){
 	}
 }
 
+SegTarget& SegmentController::newTarget(const sf::Vector2f& origin){
+	SegTarget* seg = new SegTarget(origin, _data.access<sf::Vector2f>("Snap Amt"));
+	return *seg;
+}
+
 sf::Vector2f SegmentController::getCenter() const{
 	auto rec = _sprite.getLocalBounds();
 	return _sprite.getPosition() + sf::Vector2f(rec.width / 2, rec.height / 2);
@@ -158,8 +163,21 @@ Segment::Segment(const sf::Vector2f& origin):
 	_data.insert("Grid Size", gridSize);
 }
 
+Segment::~Segment(){
+	for(auto target : _targets){
+		delete target;
+	}
+	_targets.clear();
+}
+
 void Segment::updateData(){
 	_grid = _data.access<int>("Grid Size");
+}
+
+void Segment::remove(SegTarget* target){
+	if(_targets.erase(target)){
+		delete target;
+	}
 }
 
 void Segment::draw(sf::RenderTarget& target, sf::RenderStates states) const{
@@ -294,12 +312,6 @@ TargetGroupHierarchy::TargetGroupHierarchy(const sf::Color& col) :
 }
 
 TargetGroupHierarchy::~TargetGroupHierarchy(){
-	for(auto& [target, group] : _managed){
-		delete target;
-	}
-	for(auto target : _dump._elems){
-		delete target;
-	}
 	for(auto group : _groups){
 		delete group;
 	}
@@ -385,21 +397,20 @@ void TargetGroupHierarchy::regroup(const sf::Vector2f& pos, std::set<SegTarget*>
 	}
 }
 
-SegTarget& TargetGroupHierarchy::newTarget(const sf::Vector2f& origin, const sf::Vector2f& snapping){
-	SegTarget* seg = new SegTarget(origin, snapping);
-	_managed[seg] = std::set<TargetGroup*>();
-	
-	_dump._elems.insert(seg);
-	rebuildActive();
-	preDraw();
-	return *seg;
-}
-
 void TargetGroupHierarchy::newGroup(const std::string& tag){
 	TargetGroup* group = new TargetGroup(tag);
 	_groups.insert(group);
 	_roots.insert(group);
 	preDraw();
+}
+
+SegTarget& TargetGroupHierarchy::newTarget(SegTarget* target){
+	_managed[target] = std::set<TargetGroup*>();
+	
+	_dump._elems.insert(target);
+	rebuildActive();
+	preDraw();
+	return *target;
 }
 
 void TargetGroupHierarchy::deleteSelectedGroups(){
@@ -429,7 +440,6 @@ void TargetGroupHierarchy::remove(SegTarget* target){
 		_managed.erase(_managed.find(target));
 	}
 	_dump._elems.erase(target);
-	delete target;
 	
 	rebuildActive();
 	preDraw();
