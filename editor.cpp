@@ -42,28 +42,15 @@ int main(int argc, char* argv[])
 	
 	Global::get()._font.loadFromFile("res/SpaceMono.ttf");
 	
-	sf::Clock clock = sf::Clock();
-	
 	sf::RenderWindow window(resolution, "SFML works!");
 	SegWindow segWindow = SegWindow(window);
-	//window.setFramerateLimit(5);
-	sf::View mainView = sf::View();
-	sf::View tabView = sf::View();
 	
-	Inspector& insp = Global::get()._insp;
-	Segment s = Segment();
-	sf::Vector2i mPos = sf::Mouse::getPosition(window);
-	SegmentController* mov = nullptr;
-	SegmentController* sel = nullptr;
-	std::set<SegTarget*> multi = std::set<SegTarget*>();
-	bool drag = false;
-	bool editing = false;
+	sf::View tabView = sf::View();
 	
 	int tab = 0;
 	
 	sf::Text tabText = sf::Text();
 	tabText.setFont(Global::get()._font);
-	
 	
 	std::vector<std::string> tabStrings = std::vector<std::string>();
 	tabStrings.push_back("N/A");
@@ -77,15 +64,8 @@ int main(int argc, char* argv[])
 	tabRect.setOutlineColor(sf::Color(99, 157, 181));
 	tabRect.setOutlineThickness(5);
 	
-	TargetGroupHierarchy hier = TargetGroupHierarchy();
-	//vector<SegTarget*> targets = vector<SegTarget*>();
-	
-	mainView.reset(sf::FloatRect(0, 0, 720, 720));
-	mainView.setViewport(sf::FloatRect(0.2f, 0.05f, 0.6f, 0.95f));
 	tabView.reset(sf::FloatRect(0, 0, 720, 60));
 	tabView.setViewport(sf::FloatRect(0.2f, 0.0f, 0.6f, 0.05f));
-	
-	window.setView(mainView);
 	
 	while (window.isOpen()){
 		//Messy event handling ----- Refactor later
@@ -98,12 +78,13 @@ int main(int argc, char* argv[])
 				}break;
 				case sf::Event::MouseButtonPressed:{
 					// Mouse pressed
-					segWindow.processEvent(event);
 					if(event.mouseButton.button == sf::Mouse::Button::Left){
+						sf::Vector2i mPos = sf::Mouse::getPosition(window);
 						if(sf::FloatRect(sf::Vector2f(), tabView.getSize()).contains(window.mapPixelToCoords(mPos, tabView))){
 							cout << tabStrings[(int)window.mapPixelToCoords(mPos, tabView).x * 4 / 720] << endl;
 						}
 					}
+					segWindow.processEvent(event);
 				}break;
 				case sf::Event::MouseButtonReleased:
 				case sf::Event::MouseMoved:
@@ -118,7 +99,6 @@ int main(int argc, char* argv[])
 			}
 		}
 		
-		//cout << (bool)mov << (bool)sel << drag << editing << endl;
 		//Draw Cycle
 		window.clear();
 		
@@ -137,22 +117,7 @@ int main(int argc, char* argv[])
 		segWindow.preDraw();
 		window.draw(segWindow);
 		
-		/*
-		window.setView(mainView);
-		window.draw(s);
-		{
-			auto pos = s.getCenter();
-			for(auto& t : hier.getActive()){
-				t->updateSource(pos);
-			}
-		}
-		*/
-		/*for(auto t : targets){
-			t->updateSource(s.getCenter());
-			window.draw(*t);
-		}*/
-		
-		window.draw(insp);
+		window.draw(Global::get()._insp);
 		//window.draw(hier);
 		
 		window.display();

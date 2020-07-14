@@ -18,6 +18,7 @@ class EditorWindow : public sf::Drawable{
 				_view.setViewport(sf::FloatRect(0.2f, 0.05f, 0.6f, 0.95f));
 		}
 	public:
+		virtual void clear() = 0;
 		virtual void processEvent(sf::Event& e) = 0;
 };
 
